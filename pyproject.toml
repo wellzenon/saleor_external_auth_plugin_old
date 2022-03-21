@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "social-auth"
+version = "0.1.0"
+description = "Social auth for saleor"
+authors = ["Wellington Zenon <wellington.zenon@gmail.com>"]
+packages = [
+    { include = "plugin.py", from="social_auth"}
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.plugins."saleor.plugins"]
+"social_auth" = "social_auth.plugin:SocialLoginPlugin"
