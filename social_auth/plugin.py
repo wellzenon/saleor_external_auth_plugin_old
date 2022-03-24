@@ -1,3 +1,4 @@
+import json
 from xmlrpc.client import boolean
 import requests
 from dataclasses import dataclass
@@ -69,19 +70,19 @@ class SocialLoginPlugin(BasePlugin):
     PLUGIN_ID = "plugin.socialauth"
     PLUGIN_DESCRIPTION = "A plugin for social authentication"
     CONFIG_STRUCTURE = {
-        "key": {
-            "type": ConfigurationTypeField.STRING,
-            "help_text": "Provide the social authentication key from the authetication provider (i.e. Facebook)",
-            "label": "Authentication Provider Key",
-        },
-        "secret": {
-            "type": ConfigurationTypeField.SECRET,
-            "help_text": "Provide the social authentication secret from the authetication provider (i.e. Facebook)",
-            "label": "Authentication Provider Secret",
-        },
+        constants.CONFIGURATION_FIELD: {
+            "type": ConfigurationTypeField.MULTILINE,
+            "help_text": "Provide all necessary configuration for each provider",
+            "label": "Providers Configuration List",
+        }
     }
     CONFIGURATION_PER_CHANNEL = False
-    DEFAULT_CONFIGURATION = []
+    DEFAULT_CONFIGURATION = [
+        {
+            "name": constants.CONFIGURATION_FIELD,
+            "value": constants.DEFAULT_CONFIGURATION_TEXT,
+        }
+    ]
     DEFAULT_ACTIVE = False
 
     @classmethod
@@ -97,11 +98,27 @@ class SocialLoginPlugin(BasePlugin):
         channel: Optional["Channel"] = None,
     ):
         self.configuration = self.get_plugin_configuration(configuration)
+        self.providers = json.loads(
+            *{
+                item["value"]
+                for item in self.configuration
+                if item["name"] == constants.CONFIGURATION_FIELD
+            }
+        )
         self.active = active
         self.channel = channel
 
     def __str__(self):
         return self.PLUGIN_NAME
+
+    def get_provider(self, payload: dict) -> dict:
+        provider_name = payload.get("provider").lower()
+
+        provider, *rest = [
+            v for k, v in self.providers.items() if k.lower() == provider_name
+        ] or list(self.providers.values())
+
+        return provider
 
     #  Handle authentication request.
     #
@@ -110,17 +127,17 @@ class SocialLoginPlugin(BasePlugin):
         self, payload: dict, request: WSGIRequest, **kwargs
     ) -> dict:
 
-        provider = payload.get("provider")
-        redirect_uri = payload.get("redirectUri")
+        provider = self.get_provider(payload)
+        redirect_uri = payload.get("redirectUri", provider.get("REDIRECT_URI"))
 
         authorization_url = (
-            f"{constants.API_ENDPOINT}?"
-            f"scope={constants.SCOPE}&"
-            f"access_type={constants.ACCESSS_TYPE}&"
-            f"include_granted_scopes={constants.INCLUDE_GRANTED_SCOPES}&"
-            f"response_type={constants.RESPONSE_TYPE}&"
-            f"state={constants.STATE}&"
-            f"client_id={constants.CLIENT_ID}&"
+            f'{provider.get("AUTH_URI")}?'
+            f'scope={provider.get("AUTH_SCOPE")}&'
+            f'access_type={provider.get("AUTH_ACCESSS_TYPE")}&'
+            f'include_granted_scopes={provider.get("AUTH_INCLUDE_GRANTED_SCOPES")}&'
+            f'response_type={provider.get("AUTH_RESPONSE_TYPE")}&'
+            f"state=TODOimplementstate&"
+            f'client_id={provider.get("CLIENT_ID")}&'
             f"redirect_uri={redirect_uri}"
         )
 
@@ -134,17 +151,18 @@ class SocialLoginPlugin(BasePlugin):
         self, payload: dict, request: WSGIRequest, previous_value: ExternalAccessTokens
     ) -> ExternalAccessTokens:
 
-        redirect_uri = payload.get("redirectUri", constants.REDIRECT_URI)
+        provider = self.get_provider(payload)
+        redirect_uri = payload.get("redirectUri", provider.get("REDIRECT_URI"))
 
         data = {
             "code": payload.get("code"),
-            "client_id": constants.CLIENT_ID,
-            "client_secret": constants.CLIENT_SECRET,
+            "client_id": provider.get("CLIENT_ID"),
+            "client_secret": provider.get("CLIENT_SECRET"),
             "redirect_uri": redirect_uri,
-            "grant_type": constants.GRANT_TYPE,
+            "grant_type": provider.get("TOKENS_GRANT_TYPE"),
         }
 
-        credentials = requests.post(constants.TOKENS_URI, data=data).json()
+        credentials = requests.post(provider.get("TOKENS_URI"), data=data).json()
 
         # if r.status_code < 200 or r.status_code >= 300:
         #     raise Error(content.error_description)
@@ -153,7 +171,7 @@ class SocialLoginPlugin(BasePlugin):
             "Authorization": f"{credentials.get('token_type')} {credentials.get('access_token')}"
         }
 
-        userinfo = requests.get(constants.USER_INFO_URI, headers=headers).json()
+        userinfo = requests.get(provider.get("USER_INFO_URI"), headers=headers).json()
 
         def is_email_verified(userinfo: dict) -> boolean:
             return userinfo.get("verified_email", False)
