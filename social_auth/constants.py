@@ -19,7 +19,7 @@ DEFAULT_CONFIGURATION_TEXT = """
         {
             "CLIENT_ID": "your google id",
             "CLIENT_SECRET": "your google secret",
-            "REDIRECT_URI": "http://localhost:3000/google/auth",
+            "REDIRECT_URI": "http://localhost:3000/auth/google",
             "AUTH_URI": "https://accounts.google.com/o/oauth2/v2/auth",
             "AUTH_SCOPE": "openid email profile",
             "AUTH_ACCESSS_TYPE": "offline",
@@ -34,7 +34,7 @@ DEFAULT_CONFIGURATION_TEXT = """
             "PROVIDER_NAME":"facebook",
             "CLIENT_ID": "your facebook id",
             "CLIENT_SECRET": "your facebook secret",
-            "REDIRECT_URI": "http://localhost:3000/facebook/auth",
+            "REDIRECT_URI": "http://localhost:3000/auth/facebook",
             "AUTH_URI": "https://accounts.google.com/o/oauth2/v2/auth",
             "AUTH_SCOPE": "openid email profile",
             "AUTH_ACCESSS_TYPE": "offline",
