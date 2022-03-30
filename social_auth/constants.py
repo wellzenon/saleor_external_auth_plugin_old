@@ -17,6 +17,7 @@ DEFAULT_CONFIGURATION_TEXT = """
 {
     "GOOGLE": 
         {
+            "PROVIDER_NAME":"google",
             "CLIENT_ID": "your google id",
             "CLIENT_SECRET": "your google secret",
             "REDIRECT_URI": "http://localhost:3000/auth/google",
@@ -35,14 +36,13 @@ DEFAULT_CONFIGURATION_TEXT = """
             "CLIENT_ID": "your facebook id",
             "CLIENT_SECRET": "your facebook secret",
             "REDIRECT_URI": "http://localhost:3000/auth/facebook",
-            "AUTH_URI": "https://accounts.google.com/o/oauth2/v2/auth",
-            "AUTH_SCOPE": "openid email profile",
+            "AUTH_URI": "https://www.facebook.com/v13.0/dialog/oauth",
             "AUTH_ACCESSS_TYPE": "offline",
             "AUTH_INCLUDE_GRANTED_SCOPES": "true",
             "AUTH_RESPONSE_TYPE": "code",
-            "TOKENS_URI": "https://oauth2.googleapis.com/token",
+            "TOKENS_URI": "https://graph.facebook.com/v13.0/oauth/access_token",
             "TOKENS_GRANT_TYPE": "authorization_code",
-            "USER_INFO_URI": "https://www.googleapis.com/oauth2/v2/userinfo"
+            "USER_INFO_URI": "https://graph.facebook.com/v13.0/me?fields=id,name,email,first_name,last_name,middle_name,is_guest_user,picture{url,height,width}"
         }
 }
 """

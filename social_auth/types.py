@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from token import OP
 from typing import List, Optional
 
 from saleor.account.models import User
@@ -47,3 +48,16 @@ class Provider:
     TOKENS_URI: str
     TOKENS_GRANT_TYPE: Optional[str]
     USER_INFO_URI: str
+
+
+@dataclass
+class Payload:
+    input: str
+    provider: str
+
+
+@dataclass
+class Context:
+    payload: Payload
+    provider: Provider
+    data: Optional[dict] = None

@@ -1,4 +1,4 @@
-from pkg_resources import get_provider
+from .utils import pipe
 from typing import TYPE_CHECKING, Optional
 
 from django.core.handlers.wsgi import WSGIRequest
@@ -6,8 +6,9 @@ from saleor.plugins.base_plugin import BasePlugin
 
 from .auth import (
     get_providers_from_config,
-    get_provider,
     get_credentials,
+    get_context,
+    get_auth_url,
     get_tokens,
     get_userinfo,
     get_user,
@@ -70,33 +71,23 @@ class SocialLoginPlugin(BasePlugin):
     def external_authentication_url(
         self, payload: dict, request: WSGIRequest, **kwargs
     ) -> dict:
-
-        provider = get_provider(self.providers)(payload)
-        scope = provider.get("AUTH_SCOPE")
-        authorization_url = (
-            f'{provider.get("AUTH_URI")}?'
-            + (f"scope={scope}&" if scope else "")
-            + f'access_type={provider.get("AUTH_ACCESSS_TYPE")}&'
-            + f'include_granted_scopes={provider.get("AUTH_INCLUDE_GRANTED_SCOPES")}&'
-            + f'response_type={provider.get("AUTH_RESPONSE_TYPE")}&'
-            + f"state=TODOimplementstate&"
-            + f'client_id={provider.get("CLIENT_ID")}&'
-            + f'redirect_uri={payload.get("redirectUri", provider.get("REDIRECT_URI"))}'
-        )
-
-        return {"authorizationUrl": authorization_url}
+        return pipe([payload, get_context(self.providers), get_auth_url])
 
     def external_obtain_access_tokens(
         self, payload: dict, request: WSGIRequest, previous_value: ExternalAccessTokens
     ) -> ExternalAccessTokens:
 
-        provider = get_provider(self.providers)(payload)
-        credentials = get_credentials(provider)(payload)
-        userinfo = get_userinfo(provider)(credentials)
-        user = get_user(provider)(userinfo)
-        tokens = get_tokens(user)
-
-        request.refresh_token = tokens.refresh_token
+        user, tokens = pipe(
+            [
+                payload,
+                get_context(self.providers),
+                get_credentials,
+                get_userinfo,
+                get_user,
+                get_tokens,
+            ]
+        )
         request._cached_user = user
+        request.refresh_token = tokens.refresh_token
 
         return tokens
