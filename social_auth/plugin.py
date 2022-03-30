@@ -71,21 +71,19 @@ class SocialLoginPlugin(BasePlugin):
     def external_authentication_url(
         self, payload: dict, request: WSGIRequest, **kwargs
     ) -> dict:
-        return pipe([payload, get_context(self.providers), get_auth_url])
+        return pipe(payload, get_context(self.providers), get_auth_url)
 
     def external_obtain_access_tokens(
         self, payload: dict, request: WSGIRequest, previous_value: ExternalAccessTokens
     ) -> ExternalAccessTokens:
 
         user, tokens = pipe(
-            [
-                payload,
-                get_context(self.providers),
-                get_credentials,
-                get_userinfo,
-                get_user,
-                get_tokens,
-            ]
+            payload,
+            get_context(self.providers),
+            get_credentials,
+            get_userinfo,
+            get_user,
+            get_tokens,
         )
         request._cached_user = user
         request.refresh_token = tokens.refresh_token
